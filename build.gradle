@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     // The Shadow plugin handles dependency relocation
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '8.3.6'
 }
 
 group = 'com.protome'
@@ -27,12 +27,9 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-// This is the magic part
+// No relocation needed — Burp loads extensions in an isolated classloader,
+// so bundled protobuf won't conflict with anything Burp uses internally.
 shadowJar {
-    // Rename Google's library to a custom name inside our jar
-    relocate 'com.google.protobuf', 'com.protome.shadow.protobuf'
-
-    // (Optional) Rename protoc-jar internal usage if needed, but usually the above is enough
 }
 
 // Tell Java to build the shadow jar when we run build
