@@ -18,7 +18,7 @@ public class RequestLogger {
         this.api = api;
 
         // Table setup
-        String[] columns = {"ID", "Method", "URL", "Time"};
+        String[] columns = {"ID", "Method", "URL", "Mutation", "Time"};
         tableModel = new DefaultTableModel(columns, 0);
         table = new JTable(tableModel);
 
@@ -43,12 +43,13 @@ public class RequestLogger {
         });
     }
 
-    public void log(HttpRequest request) {
+    public void log(HttpRequest request, String mutation) {
         SwingUtilities.invokeLater(() -> {
             tableModel.addRow(new Object[]{
                     tableModel.getRowCount() + 1,
                     request.method(),
                     request.url(),
+                    mutation != null ? mutation : "-",
                     java.time.LocalTime.now().toString()
             });
             // Update the viewer immediately with the latest request (for simplicity)

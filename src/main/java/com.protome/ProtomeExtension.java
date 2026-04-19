@@ -31,15 +31,17 @@ public class ProtomeExtension implements BurpExtension {
         this.protoManager = new ProtoManager(api);
         this.logger = new RequestLogger(api);
 
+        api.http().registerHttpHandler(new ProtomeHttpHandler(api, protoManager, logger));
+
         JPanel mainPanel = new JPanel(new BorderLayout());
         JTabbedPane tabs = new JTabbedPane();
 
         tabs.add("Settings", buildSettingsTab());
         tabs.add("Logger", logger.getUiComponent());
+        tabs.add("Mutations", buildMutationsTab());
 
         mainPanel.add(tabs);
         api.userInterface().registerSuiteTab("Protome", mainPanel);
-        api.http().registerHttpHandler(new ProtomeHttpHandler(api, protoManager, logger));
         api.logging().logToOutput("Protome loaded.");
     }
 
@@ -142,6 +144,57 @@ public class ProtomeExtension implements BurpExtension {
 
         panel.add(topPanel, BorderLayout.NORTH);
         panel.add(splitPane, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel buildMutationsTab() {
+        String[][] strategies = {
+            {"wire-type-flip",  "Flips wire types in all field tags (VARINT\u2194LEN, I64\u2194I32). Parser receives the wrong type for every field."},
+            {"varint-overflow", "Pads all VARINT field values to 11 bytes, exceeding the 10-byte spec maximum."},
+            {"length-bomb",     "Replaces LEN field lengths with 2 147 483 647, forcing a 2 GB allocation attempt."},
+            {"duplicate-field", "Appends the entire serialized message to itself so every field appears twice."},
+            {"unknown-field",   "Appends fields 10000\u201310003 (all wire types) that won\u2019t exist in any real schema."},
+        };
+
+        String[] columns = {"Strategy", "Description"};
+        javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
+        for (String[] row : strategies) model.addRow(row);
+
+        JTable table = new JTable(model);
+        table.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        table.getColumnModel().getColumn(0).setPreferredWidth(140);
+        table.getColumnModel().getColumn(0).setMaxWidth(200);
+        table.getColumnModel().getColumn(1).setPreferredWidth(600);
+        table.setRowHeight(22);
+
+        JButton copyHeader = new JButton("Copy Selected Header");
+        copyHeader.setEnabled(false);
+        copyHeader.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row < 0) return;
+            String strategy = (String) model.getValueAt(row, 0);
+            copyToClipboard("protome-mutate: " + strategy);
+        });
+
+        JButton copyAll = new JButton("Copy All (Intruder Payload List)");
+        copyAll.addActionListener(e -> {
+            StringBuilder sb = new StringBuilder();
+            for (String[] row : strategies) sb.append(row[0]).append("\n");
+            copyToClipboard(sb.toString().trim());
+        });
+
+        table.getSelectionModel().addListSelectionListener(e -> copyHeader.setEnabled(table.getSelectedRow() >= 0));
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        buttons.add(copyHeader);
+        buttons.add(copyAll);
+
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        panel.add(buttons, BorderLayout.SOUTH);
         return panel;
     }
 

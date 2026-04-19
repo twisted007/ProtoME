@@ -49,6 +49,13 @@ public class ProtomeHttpHandler implements HttpHandler {
                 api.logging().logToOutput("WARNING: Resulting Protobuf message is empty (0 bytes). Check JSON key spelling!");
             }
 
+            // Apply binary mutation before gRPC framing (if requested)
+            String mutationStrategy = getHeaderValueIgnoreCase(requestToBeSent, "protome-mutate");
+            if (mutationStrategy != null) {
+                protoBytes = ProtoMutator.mutate(protoBytes, mutationStrategy);
+                api.logging().logToOutput("Applied mutation '" + mutationStrategy + "'. Mutated size: " + protoBytes.length + " bytes.");
+            }
+
             // Handle gRPC Wrapping if requested
             if (isGrpc) {
                 ByteBuffer buffer = ByteBuffer.allocate(5 + protoBytes.length);
@@ -66,10 +73,12 @@ public class ProtomeHttpHandler implements HttpHandler {
                     .withRemovedHeader("protome-type")
                     .withRemovedHeader("Protome-Type")
                     .withRemovedHeader("protome-grpc")
+                    .withRemovedHeader("protome-mutate")
+                    .withRemovedHeader("Protome-Mutate")
                     .withHeader("Content-Type", isGrpc ? "application/grpc" : "application/x-protobuf")
                     .withBody(ByteArray.byteArray(protoBytes));
 
-            logger.log(modifiedRequest);
+            logger.log(modifiedRequest, mutationStrategy);
 
             return RequestToBeSentAction.continueWith(modifiedRequest);
 
