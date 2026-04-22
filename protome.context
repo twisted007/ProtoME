@@ -1,0 +1,17 @@
+---
+  The extension sends requests with these transforms applied before they hit your server:
+  - JSON body is serialized to binary protobuf (Content-Type: application/x-protobuf or application/grpc)
+  - Control headers (protome, protome-type, protome-grpc, protome-mutate) are stripped before sending
+  - If protome-grpc: true was set, a 5-byte gRPC framing header is prepended to the binary body
+
+  Mutation strategies — triggered via protome-mutate: <strategy> header, applied to binary protobuf before sending:
+  - wire-type-flip — all field wire types flipped (VARINT↔LEN, I64↔I32), payload bytes unchanged
+  - varint-overflow — all VARINT field values padded to 11 bytes (spec max is 10)
+  - length-bomb — all LEN field lengths replaced with 0x7FFFFFFF (2GB)
+  - duplicate-field — entire serialized message appended to itself
+  - unknown-field — fields 10000–10003 (varied wire types) appended after the real payload
+
+  What to add to confirm the extension is working:
+  1. A /debug endpoint that accepts raw bytes, attempts to parse them as protobuf, and returns a JSON response with: the raw byte length, whether parsing succeeded, which fields were populated, and the raw hex dump. This lets you confirm
+   binary is arriving (not JSON), and that mutations are producing the expected malformed payloads.
+  2. Structured error handling that distinguishes DecodeError (malformed encoding — your mutations) from normal validation failures, so you can tell at a glance in Burp's response whether the mutation landed.

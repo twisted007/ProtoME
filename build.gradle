@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    // The Shadow plugin handles dependency relocation
+    id 'com.gradleup.shadow' version '8.3.6'
+}
+
+group = 'com.protome'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url "https://jitpack.io" }
+}
+
+dependencies {
+    // Burp API is provided by Burp, so we use compileOnly to avoid bloating the jar
+    compileOnly 'net.portswigger.burp.extensions:montoya-api:2023.10.1'
+
+    // These will be bundled and renamed (shadowed)
+    implementation 'com.google.protobuf:protobuf-java:3.24.0'
+    implementation 'com.google.protobuf:protobuf-java-util:3.24.0'
+    implementation 'com.github.os72:protoc-jar:3.11.4'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// No relocation needed — Burp loads extensions in an isolated classloader,
+// so bundled protobuf won't conflict with anything Burp uses internally.
+shadowJar {
+}
+
+// Tell Java to build the shadow jar when we run build
+build.dependsOn shadowJar

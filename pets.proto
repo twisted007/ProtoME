@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package pets;
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum PetStatus {
+  UNKNOWN = 0;
+  AVAILABLE = 1;
+  ADOPTED = 2;
+  PENDING = 3;
+}
+
+enum Species {
+  OTHER = 0;
+  DOG = 1;
+  CAT = 2;
+  BIRD = 3;
+  RABBIT = 4;
+  REPTILE = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Auth messages
+// ---------------------------------------------------------------------------
+
+// NOTE: is_admin is not exposed in the UI — discoverable via schema inspection
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+  bool   is_admin = 3;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Pet messages
+// ---------------------------------------------------------------------------
+
+message Pet {
+  int32  id         = 1;
+  string name       = 2;
+  Species species   = 3;
+  string breed      = 4;
+  int32  age_months = 5;
+  PetStatus status  = 6;
+  string notes      = 7;
+}
+
+message CreatePetRequest {
+  string name       = 1;
+  Species species   = 2;
+  string breed      = 3;
+  int32  age_months = 4;
+  PetStatus status  = 5;
+  string notes      = 6;
+}
+
+message UpdatePetRequest {
+  string name       = 1;
+  Species species   = 2;
+  string breed      = 3;
+  int32  age_months = 4;
+  PetStatus status  = 5;
+  string notes      = 6;
+}
+
+message ListPetsRequest {
+  PetStatus status_filter = 1;
+}
