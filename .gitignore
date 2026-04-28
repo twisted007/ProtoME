@@ -1,0 +1,27 @@
+# Gradle build output and cache
+build/
+.gradle/
+
+# Compiled class files (IntelliJ output directory)
+bin/
+
+# Python virtual environment
+lib/
+lib64/
+include/
+pyvenv.cfg
+__pycache__/
+*.pyc
+*.pyo
+
+# Claude Code project instructions (private)
+CLAUDE.md
+.claude/
+
+# IDE and editor settings
+.idea/
+.vscode/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
