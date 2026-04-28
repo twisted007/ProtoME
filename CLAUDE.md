@@ -13,20 +13,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build
 
+Must be run with the Java 17 JDK explicitly — the system default (`java-23-openjdk`) is a JRE-only install that lacks the compiler:
+
 ```bash
-./gradlew shadowJar
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew shadowJar
 ```
 
 Output: `build/libs/ProtoMe-1.0-SNAPSHOT-all.jar`
 
-Always use the `-all` jar — it bundles `protobuf-java`, `protobuf-java-util`, and `protoc-jar`. The Burp API (`montoya-api`) is `compileOnly` and must not be bundled.
+Always use the `-all` jar — it bundles `protobuf-java`, `protobuf-java-util`, `protoc-jar`, and `gson`. The Burp API (`montoya-api`) is `compileOnly` and must not be bundled.
 
 No tests exist in this project.
 
 ## Build Debugging
 - When build failures occur, diagnose the ROOT CAUSE before applying fixes. Do not stack incremental workarounds.
+- If you see `Toolchain installation does not provide the required capabilities: [JAVA_COMPILER]`, the wrong JDK is active — prefix the command with `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64`.
 - For Gradle/Shadow plugin errors, check plugin version compatibility and relocate directives first.
-- Verify the build succeeds (`./gradlew build`) after each fix attempt before moving on.
+- Verify the build succeeds (`JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew build`) after each fix attempt before moving on.
 
 
 ## Architecture

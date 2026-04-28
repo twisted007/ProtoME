@@ -1,136 +1,174 @@
 # Protome: Burp Suite Protobuf Bridge
 
-**Protome** is a Burp Suite extension that allows you to test Protobuf services using user-friendly JSON. It intercepts requests, converts the JSON body into binary Protobuf "in-flight" based on a provided `.proto` definition, and sends the binary payload to the server.
+**Protome** is a Burp Suite extension for testing Protobuf and gRPC services. It intercepts requests and converts JSON bodies into binary Protobuf on-the-fly, so you can use Burp's **Repeater**, **Intruder**, and **Scanner** with human-readable JSON while the extension handles binary serialization in the background.
 
-This enables you to use Burp's **Repeater**, **Intruder**, and **Scanner** with standard JSON payloads, while the extension handles the complex binary serialization in the background.
+Two modes are available:
+
+- **Schema mode** — load a `.proto` file and serialize using named fields. Best when you have the schema.
+- **Blackbox mode** — decode intercepted binary Protobuf with no schema required. Best for reverse engineering.
+
+---
 
 ## Features
-* **Dynamic Compilation:** Loads `.proto` files directly without manual compilation.
-* **JSON-to-Protobuf:** Edit requests as JSON; send them as Protobuf.
-* **gRPC Support:** Optional toggling of gRPC framing (5-byte header).
-* **Traffic Logging:** Dedicated tab to view the transformed requests.
+
+- **JSON-to-Protobuf:** Edit requests as JSON; send them as binary Protobuf.
+- **Blackbox decoding:** Right-click any binary Protobuf request to decode it into editable JSON with no `.proto` file needed.
+- **gRPC support:** Optional 5-byte gRPC framing header.
+- **Fuzzing mutations:** Five binary-level mutation strategies for stress-testing server-side parsers.
+- **Traffic logging:** Dedicated Logger tab showing every transformed request.
+- **Payload generation:** Right-click any message in the Settings tree to generate a JSON template or a complete ready-to-paste Burp request.
 
 ---
 
-## 1. Installation
+## Installation
 
-1.  **Download the JAR file**
-    * Download the pre-compiled .jar file from this repository.
-2.  **(OPTIONAL) Build the Project:** If you want to customize
-    * Open the project in IntelliJ IDEA.
-    * Run the Gradle task: `Tasks` > `shadow` > `shadowJar`.
-    * Locate the file `build/libs/Protome-1.0-SNAPSHOT-all.jar`. (Note: Use the **`-all`** jar, which includes dependencies).
-3.  **Load into Burp Suite:**
-    * Go to the **Extensions** tab in Burp Suite.
-    * Click **Add**.
-    * Select **Extension type: Java**.
-    * Click **Select file...** and choose the `Protome-1.0-SNAPSHOT-all.jar`.
-    * Click **Next**. You should see a new tab titled **Protome** appear in the main interface.
+1. Download the pre-compiled JAR, or build it yourself (see below).
+2. In Burp Suite, go to **Extensions** → **Add**.
+3. Set **Extension type** to **Java**.
+4. Select `ProtoMe-1.0-SNAPSHOT-all.jar` (use the `-all` jar — it bundles all dependencies).
+5. Click **Next**. A new **Protome** tab will appear in the main Burp interface.
 
----
+### Building from source
 
-## 2. Configuration
+```bash
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew shadowJar
+```
 
-Before intercepting traffic, you must tell Protome what your data structures look like.
-
-1.  Click the **Protome** tab in Burp Suite.
-2.  Go to the **Settings** sub-tab.
-3.  Click **Select .proto File**.
-4.  Browse to your target `.proto` definition file.
-5.  Check the **Extensions > Output** tab to confirm the file was loaded and to see a list of available Message Types.
-
-> **Note:** If your `.proto` file imports other files, ensure they are located in the same directory so the compiler can resolve them.
+Output: `build/libs/ProtoMe-1.0-SNAPSHOT-all.jar`
 
 ---
 
-## 3. Usage
+## Schema Mode
 
-Protome uses specific **HTTP Headers** to trigger transformations. If these headers are not present, the request is passed through unchanged.
+Use this when you have the `.proto` definition for the target service.
 
-### Required Headers
-To modify a request in **Repeater** or **Intruder**, add these headers:
+### 1. Load a .proto file
 
-| Header | Value | Description |
+1. Open the **Protome → Settings** tab.
+2. Click **Select .proto File** and browse to your schema.
+3. The left pane shows a tree of all message types and their fields. The right pane shows the raw source.
+
+> If your `.proto` imports other files, keep them in the same directory so the compiler can resolve them.
+
+### 2. Generate a payload
+
+Right-click any message node in the tree:
+
+- **Build Request** — copies a JSON body with dummy values for every field to your clipboard.
+- **Copy as Full Burp Request** — copies a complete HTTP request string with all Protome headers pre-filled. Paste directly into Repeater.
+
+### 3. Send the request
+
+Add these headers to your request in Repeater or Intruder:
+
+| Header | Value | Notes |
 | :--- | :--- | :--- |
-| `protome` | `true` | **Required.** Activates the extension for this request. |
-| `protome-type` | `MessageName` | **Required.** The case-sensitive name of the message (e.g., `SearchRequest` or `com.example.SearchRequest`). |
+| `protome` | `true` | Required. Activates the extension for this request. |
+| `protome-type` | `MessageName` | Required. Case-sensitive message name (e.g. `SearchRequest` or `com.example.SearchRequest`). |
+| `protome-grpc` | `true` | Optional. Wraps the binary in a 5-byte gRPC framing header. |
+| `protome-mutate` | `<strategy>` | Optional. Applies a fuzzing mutation before sending. See [Mutations](#mutations). |
 
-### Optional Headers
+**Example:**
 
-| Header | Value | Description |
-| :--- | :--- | :--- |
-| `protome-grpc` | `true` | Wraps the binary payload in the standard 5-byte gRPC header (Compression + Length). Use this if the target is a gRPC endpoint. |
-
-### Example Request (Repeater)
-
-**Input (What you see):**
 ```http
 POST /api/search HTTP/1.1
 Host: example.com
+Content-Type: application/json
 protome: true
 protome-type: SearchRequest
-Content-Type: application/json
 
 {
     "query": "test_payload",
     "page_number": 1
 }
 ```
-**Output (What the server sees):**
-- **Headers:** 
-	- `protome` headers are removed. 
-	- `Content-Type` is set to `application/x-protobuf`.
-- **Body:** The JSON is serialized into binary Protobuf.
 
+The server receives binary Protobuf. The `protome` headers are stripped and `Content-Type` is set to `application/x-protobuf` (or `application/grpc` if gRPC framing is active).
 
 ---
 
-## 4. Generating Sample JSON
+## Blackbox Mode
 
-Protobuf parsers are strict. If your JSON keys do not match the `.proto` field names exactly (case-sensitive), the fields will be ignored, resulting in empty messages and `400 Bad Request` errors.
+Use this when you don't have a `.proto` file. Protome decodes intercepted binary Protobuf using wire-type heuristics, produces editable JSON with field numbers as keys (`field_1`, `field_2`, ...), and re-encodes it when you send the request. No schema file is loaded or required.
 
-Use the provided Python script `proto_gen.py` to generate a valid JSON template.
+### 1. Decode a request
 
-### Setup (Virtual Environment)
-Keep your system clean by running this in a virtual environment:
+Right-click any request with a binary Protobuf body — in Proxy history, Repeater, Target site map, or anywhere else Burp shows a request — and select **Send to Protome (Blackbox)**.
 
-```bash
-# 1. Create the virtual environment
-python3 -m venv venv
+A new Repeater tab opens with the decoded JSON. If gRPC framing was detected, it is stripped automatically and the `protome-grpc: true` header is added so framing is re-applied on send.
 
-# 2. Activate it
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
+### 2. Edit and send
 
-# 3. Install dependencies
-pip install grpcio-tools protobuf
+The JSON uses `field_N` keys matching the wire field numbers. Edit the values and send normally. Protome re-encodes the JSON to binary wire format.
+
+For fields where the wire type is ambiguous, the decoder emits a typed wrapper object:
+
+```json
+{
+    "field_1": "search query",
+    "field_2": 42,
+    "field_3": {"@type": "double", "@value": 3.14},
+    "field_4": {"@type": "bytes", "@value": "SGVsbG8="}
+}
 ```
 
-### How to use
-1.  **Identify the Message Name:**
-    * Load your `.proto` file in the Burp Extension.
-    * Look at the **Extensions > Output** tab. It lists all registered messages (e.g., `>> REGISTERED: com.example.SearchRequest`).
-2.  **Run the script:**
-    Pass the path to your `.proto` file and the message name you want to generate.
+You can change `@type` to reinterpret a field without touching the value. Supported types:
 
-```bash
-python proto_gen.py path/to/config.proto SearchRequest
+`int32` `int64` `uint32` `uint64` `sint32` `sint64` `bool` `double` `fixed64` `sfixed64` `float` `fixed32` `sfixed32` `string` `bytes` `packed_int64` `packed_int32` `packed_sint64` `packed_sint32`
+
+### 3. Headers added automatically
+
+Blackbox decoding sets these headers in the new Repeater tab — you don't add them manually:
+
+| Header | Value | Notes |
+| :--- | :--- | :--- |
+| `protome` | `true` | Activates the extension. |
+| `protome-blackbox` | `true` | Selects schema-free encoding. |
+| `protome-grpc` | `true` | Only present if gRPC framing was detected in the original. |
+
+---
+
+## Mutations
+
+Protome can deliberately corrupt a serialized Protobuf message at the binary level before sending, targeting weaknesses in server-side parsers that JSON-level tools can't reach.
+
+Add the `protome-mutate` header to any schema-mode or blackbox-mode request:
+
+```
+protome-mutate: wire-type-flip
 ```
 
-3.  **Result:**
-    The script will print a valid JSON object with dummy data for every field. Copy this into Burp Repeater to ensure your structure is correct.
+Mutation is applied after JSON→binary serialization and before gRPC framing.
+
+### Strategies
+
+| Strategy | What it does |
+| :--- | :--- |
+| `wire-type-flip` | Flips wire types on all field tags (VARINT↔LEN, I64↔I32). Parser receives the correct field number but the wrong type. |
+| `varint-overflow` | Re-encodes all VARINT values as 11 bytes — one more than the 10-byte spec maximum. Strict parsers reject this outright. |
+| `length-bomb` | Replaces all LEN field length prefixes with `2,147,483,647`. Targets parsers that pre-allocate a buffer of the declared size. |
+| `duplicate-field` | Appends the entire message to itself so every field appears twice. |
+| `unknown-field` | Appends four synthetic fields (numbers 10000–10003, all wire types) that won't exist in any real schema. |
+
+### Using with Intruder
+
+Open the **Protome → Mutations** tab to see all strategies with descriptions. Use **Copy All (Intruder Payload List)** to copy every strategy name as a line-separated list, then paste it into an Intruder simple list payload. Set the `protome-mutate` header value as the insertion point.
 
 ---
 
 ## Troubleshooting
 
-* **400 Bad Request?**
-    * Check the Burp **Extensions > Output** tab. If it says `Raw Size: 0 bytes`, your JSON keys do not match the `.proto` definition. Use `proto_gen.py` to verify spelling.
-    * Try adding `protome-grpc: true` if targeting a gRPC service.
-* **"Unknown Message Type" Error?**
-    * Did you reload the extension? You must reload the `.proto` file in the Settings tab every time you reload the extension JAR.
-    * Check if the message is inside a package. You may need to use `com.example.MessageName` instead of just `MessageName`.
-* **Changes not appearing?**
-    * Modifications happen "in-flight." You won't see the binary in Repeater. Check the **Protome > Logger** tab to see the final outgoing request.
+**400 Bad Request in schema mode?**
+- Check the Burp **Extensions → Output** tab. `Raw Size: 0 bytes` means your JSON field names don't match the `.proto` definition — they are case-sensitive. Use the right-click **Build Request** option to generate a correctly named template.
+- If targeting a gRPC endpoint, add `protome-grpc: true`.
+
+**"Unknown Message Type" error?**
+- You must reload the `.proto` file in the Settings tab every time the extension is reloaded.
+- Try the fully qualified name: `com.example.MessageName` instead of just `MessageName`.
+
+**Blackbox decode produced no fields / error JSON?**
+- The payload may be encrypted, compressed, or use a custom framing format. If you have a `.proto` file for this endpoint, use schema mode instead.
+- The decoded JSON will include a `_raw_hex` field with the original bytes for manual inspection.
+
+**Changes not visible in Repeater?**
+- Transformation happens in-flight — the binary body won't appear in the Repeater editor. Check the **Protome → Logger** tab to inspect the final outgoing request.
