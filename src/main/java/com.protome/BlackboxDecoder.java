@@ -122,7 +122,7 @@ public class BlackboxDecoder {
             if (result.size() == 0 && payload.length > 0) {
                 return errorResult(body, wasGrpc,
                     "Parsing produced no fields. The payload may be encrypted, " +
-                    "compressed, or use a custom framing format not recognized by Protome.");
+                    "compressed, or use a custom framing format not recognized by ProtoME.");
             }
 
             return new DecoderResult(GSON.toJson(result), wasGrpc, true);
@@ -361,7 +361,7 @@ public class BlackboxDecoder {
         error.addProperty("_raw_hex", bytesToHex(body));
         error.addProperty("_next_steps",
             "If you have a .proto specification file for this endpoint, load it in the " +
-            "Protome Settings tab and use the schema-based workflow (protome-type header) instead. " +
+            "ProtoME Settings tab and use the schema-based workflow (protome-type header) instead. " +
             "The hex dump above may help identify the encoding or framing format in use.");
         return new DecoderResult(GSON.toJson(error), wasGrpc, false);
     }

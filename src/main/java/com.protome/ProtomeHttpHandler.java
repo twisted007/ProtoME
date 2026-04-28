@@ -14,10 +14,10 @@ import java.util.List;
  * Burp's Montoya API lets extensions register an HttpHandler, which gives us a
  * hook that fires on EVERY outgoing request before it leaves Burp. This class
  * is that hook. Its job is to:
- *   1. Decide whether this request is meant for Protome (opt-in via headers).
+ *   1. Decide whether this request is meant for ProtoME (opt-in via headers).
  *   2. If yes, convert the human-readable JSON body into binary Protobuf.
  *   3. Optionally corrupt the binary (fuzzing mutations) or wrap it in a gRPC frame.
- *   4. Strip the Protome control headers so the server never sees them.
+ *   4. Strip the ProtoME control headers so the server never sees them.
  *   5. Forward the modified request and record it in the Logger tab.
  *
  * If anything goes wrong, the original request is forwarded unchanged — we
@@ -63,7 +63,7 @@ public class ProtomeHttpHandler implements HttpHandler {
 
         if (msgType == null && !isBlackbox) {
             api.logging().logToOutput(
-                "Protome: Missing 'protome-type' header. " +
+                "ProtoME: Missing 'protome-type' header. " +
                 "Add 'protome-blackbox: true' to use schema-free mode.");
             return RequestToBeSentAction.continueWith(requestToBeSent);
         }
@@ -85,7 +85,7 @@ public class ProtomeHttpHandler implements HttpHandler {
             byte[] protoBytes;
             if (isBlackbox) {
                 protoBytes = BlackboxEncoder.encode(jsonBody);
-                api.logging().logToOutput("Protome Blackbox: Encoded JSON to binary. Size: " + protoBytes.length + " bytes.");
+                api.logging().logToOutput("ProtoME Blackbox: Encoded JSON to binary. Size: " + protoBytes.length + " bytes.");
             } else {
                 protoBytes = protoManager.jsonToProto(jsonBody, msgType);
             }
@@ -127,7 +127,7 @@ public class ProtomeHttpHandler implements HttpHandler {
             }
 
             // === STEP 6: REBUILD THE REQUEST ===
-            // Strip all Protome control headers (the server should never see them),
+            // Strip all ProtoME control headers (the server should never see them),
             // set the correct Content-Type for the wire format, and swap in the
             // binary body. The Montoya API uses a builder/fluent style — each
             // "withX" call returns a new modified copy of the request rather than
@@ -153,12 +153,12 @@ public class ProtomeHttpHandler implements HttpHandler {
             // If anything in the pipeline fails, forward the original request unchanged.
             // We never drop traffic — a failed conversion is surfaced in Burp's error log
             // but doesn't break the user's session.
-            api.logging().logToError("Protome Conversion Error: " + e.getMessage());
+            api.logging().logToError("ProtoME Conversion Error: " + e.getMessage());
             return RequestToBeSentAction.continueWith(requestToBeSent);
         }
     }
 
-    // We don't inspect responses — Protome is request-only.
+    // We don't inspect responses — ProtoME is request-only.
     @Override
     public ResponseReceivedAction handleHttpResponseReceived(HttpResponseReceived responseReceived) {
         return ResponseReceivedAction.continueWith(responseReceived);

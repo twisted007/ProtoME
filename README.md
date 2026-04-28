@@ -1,6 +1,6 @@
-# Protome: Burp Suite Protobuf Bridge
+# ProtoME: Burp Suite Protobuf Bridge
 
-**Protome** is a Burp Suite extension for testing Protobuf and gRPC services. It intercepts requests and converts JSON bodies into binary Protobuf on-the-fly, so you can use Burp's **Repeater**, **Intruder**, and **Scanner** with human-readable JSON while the extension handles binary serialization in the background.
+**ProtoME** is a Burp Suite extension for testing Protobuf and gRPC services. It intercepts requests and converts JSON bodies into binary Protobuf on-the-fly, so you can use Burp's **Repeater**, **Intruder**, and **Scanner** with human-readable JSON while the extension handles binary serialization in the background.
 
 Two modes are available:
 
@@ -25,8 +25,8 @@ Two modes are available:
 1. Download the pre-compiled JAR, or build it yourself (see below).
 2. In Burp Suite, go to **Extensions** → **Add**.
 3. Set **Extension type** to **Java**.
-4. Select `ProtoMe-1.0-SNAPSHOT-all.jar` (use the `-all` jar — it bundles all dependencies).
-5. Click **Next**. A new **Protome** tab will appear in the main Burp interface.
+4. Select `ProtoME-1.0-SNAPSHOT-all.jar` (use the `-all` jar — it bundles all dependencies).
+5. Click **Next**. A new **ProtoME** tab will appear in the main Burp interface.
 
 ### Building from source
 
@@ -34,7 +34,7 @@ Two modes are available:
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew shadowJar
 ```
 
-Output: `build/libs/ProtoMe-1.0-SNAPSHOT-all.jar`
+Output: `build/libs/ProtoME-1.0-SNAPSHOT-all.jar`
 
 ---
 
@@ -44,7 +44,7 @@ Use this when you have the `.proto` definition for the target service.
 
 ### 1. Load a .proto file
 
-1. Open the **Protome → Settings** tab.
+1. Open the **ProtoME → Settings** tab.
 2. Click **Select .proto File** and browse to your schema.
 3. The left pane shows a tree of all message types and their fields. The right pane shows the raw source.
 
@@ -55,7 +55,7 @@ Use this when you have the `.proto` definition for the target service.
 Right-click any message node in the tree:
 
 - **Build Request** — copies a JSON body with dummy values for every field to your clipboard.
-- **Copy as Full Burp Request** — copies a complete HTTP request string with all Protome headers pre-filled. Paste directly into Repeater.
+- **Copy as Full Burp Request** — copies a complete HTTP request string with all ProtoME headers pre-filled. Paste directly into Repeater.
 
 ### 3. Send the request
 
@@ -89,17 +89,17 @@ The server receives binary Protobuf. The `protome` headers are stripped and `Con
 
 ## Blackbox Mode
 
-Use this when you don't have a `.proto` file. Protome decodes intercepted binary Protobuf using wire-type heuristics, produces editable JSON with field numbers as keys (`field_1`, `field_2`, ...), and re-encodes it when you send the request. No schema file is loaded or required.
+Use this when you don't have a `.proto` file. ProtoME decodes intercepted binary Protobuf using wire-type heuristics, produces editable JSON with field numbers as keys (`field_1`, `field_2`, ...), and re-encodes it when you send the request. No schema file is loaded or required.
 
 ### 1. Decode a request
 
-Right-click any request with a binary Protobuf body — in Proxy history, Repeater, Target site map, or anywhere else Burp shows a request — and select **Send to Protome (Blackbox)**.
+Right-click any request with a binary Protobuf body — in Proxy history, Repeater, Target site map, or anywhere else Burp shows a request — and select **Send to ProtoME (Blackbox)**.
 
 A new Repeater tab opens with the decoded JSON. If gRPC framing was detected, it is stripped automatically and the `protome-grpc: true` header is added so framing is re-applied on send.
 
 ### 2. Edit and send
 
-The JSON uses `field_N` keys matching the wire field numbers. Edit the values and send normally. Protome re-encodes the JSON to binary wire format.
+The JSON uses `field_N` keys matching the wire field numbers. Edit the values and send normally. ProtoME re-encodes the JSON to binary wire format.
 
 For fields where the wire type is ambiguous, the decoder emits a typed wrapper object:
 
@@ -130,7 +130,7 @@ Blackbox decoding sets these headers in the new Repeater tab — you don't add t
 
 ## Mutations
 
-Protome can deliberately corrupt a serialized Protobuf message at the binary level before sending, targeting weaknesses in server-side parsers that JSON-level tools can't reach.
+ProtoME can deliberately corrupt a serialized Protobuf message at the binary level before sending, targeting weaknesses in server-side parsers that JSON-level tools can't reach.
 
 Add the `protome-mutate` header to any schema-mode or blackbox-mode request:
 
@@ -152,7 +152,7 @@ Mutation is applied after JSON→binary serialization and before gRPC framing.
 
 ### Using with Intruder
 
-Open the **Protome → Mutations** tab to see all strategies with descriptions. Use **Copy All (Intruder Payload List)** to copy every strategy name as a line-separated list, then paste it into an Intruder simple list payload. Set the `protome-mutate` header value as the insertion point.
+Open the **ProtoME → Mutations** tab to see all strategies with descriptions. Use **Copy All (Intruder Payload List)** to copy every strategy name as a line-separated list, then paste it into an Intruder simple list payload. Set the `protome-mutate` header value as the insertion point.
 
 ---
 
@@ -171,4 +171,4 @@ Open the **Protome → Mutations** tab to see all strategies with descriptions. 
 - The decoded JSON will include a `_raw_hex` field with the original bytes for manual inspection.
 
 **Changes not visible in Repeater?**
-- Transformation happens in-flight — the binary body won't appear in the Repeater editor. Check the **Protome → Logger** tab to inspect the final outgoing request.
+- Transformation happens in-flight — the binary body won't appear in the Repeater editor. Check the **ProtoME → Logger** tab to inspect the final outgoing request.

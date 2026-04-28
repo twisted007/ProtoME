@@ -19,15 +19,15 @@ import java.util.List;
  * items to the right-click menu anywhere Burp displays an HTTP request: Proxy history,
  * Repeater, Scanner results, Target site map, Intruder, etc.
  *
- * When the tester right-clicks and selects "Send to Protome (Blackbox)", this class:
+ * When the tester right-clicks and selects "Send to ProtoME (Blackbox)", this class:
  *   1. Extracts the request body from whatever context triggered the menu
  *   2. Passes it to BlackboxDecoder, which auto-detects gRPC framing and applies
  *      heuristic type inference to produce field_n JSON
- *   3. Builds a new request with the decoded JSON body and Protome control headers
+ *   3. Builds a new request with the decoded JSON body and ProtoME control headers
  *   4. Opens it in a new Repeater tab for the tester to edit and replay
  *
  * The new Repeater request preserves the original host, path, method, and most
- * headers. Protome control headers are added, and Content-Type is set to
+ * headers. ProtoME control headers are added, and Content-Type is set to
  * application/json (since the body is now JSON while editing).
  *
  * If decoding fails (encrypted payload, unknown format), the Repeater tab still
@@ -49,7 +49,7 @@ public class BlackboxContextMenu implements ContextMenuItemsProvider {
      */
     @Override
     public List<Component> provideMenuItems(ContextMenuEvent event) {
-        JMenuItem item = new JMenuItem("Send to Protome (Blackbox)");
+        JMenuItem item = new JMenuItem("Send to ProtoME (Blackbox)");
         item.addActionListener(e -> handleConvert(event));
         return List.of(item);
     }
@@ -63,14 +63,14 @@ public class BlackboxContextMenu implements ContextMenuItemsProvider {
         HttpRequest originalRequest = resolveRequest(event);
 
         if (originalRequest == null) {
-            api.logging().logToOutput("Protome Blackbox: No request found in this context.");
+            api.logging().logToOutput("ProtoME Blackbox: No request found in this context.");
             return;
         }
 
         byte[] body = originalRequest.body().getBytes();
 
         if (body.length == 0) {
-            api.logging().logToOutput("Protome Blackbox: Request has no body to decode.");
+            api.logging().logToOutput("ProtoME Blackbox: Request has no body to decode.");
             return;
         }
 
@@ -79,17 +79,17 @@ public class BlackboxContextMenu implements ContextMenuItemsProvider {
 
         if (result.success) {
             api.logging().logToOutput(
-                "Protome Blackbox: Decoded request body successfully." +
+                "ProtoME Blackbox: Decoded request body successfully." +
                 (result.wasGrpc ? " (gRPC framing detected and stripped)" : ""));
         } else {
             api.logging().logToOutput(
-                "Protome Blackbox: Could not fully parse body — opening Repeater tab with error details.");
+                "ProtoME Blackbox: Could not fully parse body — opening Repeater tab with error details.");
         }
 
         // === Build the new request for Repeater ===
         // We start from the original request to preserve the host, path, method,
         // and any authentication/session headers the tester already has in place.
-        // Then we swap out the body-related headers and add Protome control headers.
+        // Then we swap out the body-related headers and add ProtoME control headers.
         HttpRequest newRequest = originalRequest
             .withRemovedHeader("Content-Type")
             .withRemovedHeader("Content-Length") // Burp will recalculate this on send

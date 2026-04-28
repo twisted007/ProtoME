@@ -52,7 +52,7 @@ public class ProtomeExtension implements BurpExtension {
     @Override
     public void initialize(MontoyaApi api) {
         this.api = api;
-        this.api.extension().setName("Protome");
+        this.api.extension().setName("ProtoME");
 
         // ProtoManager holds the loaded schema and does all serialization work.
         // RequestLogger owns the Logger tab UI and the log table.
@@ -63,7 +63,7 @@ public class ProtomeExtension implements BurpExtension {
         // call ProtomeHttpHandler.handleHttpRequestToBeSent() for every outgoing request.
         api.http().registerHttpHandler(new ProtomeHttpHandler(api, protoManager, logger));
 
-        // Register the blackbox context menu. This adds "Send to Protome (Blackbox)"
+        // Register the blackbox context menu. This adds "Send to ProtoME (Blackbox)"
         // to the right-click menu everywhere Burp displays an HTTP request.
         api.userInterface().registerContextMenuItemsProvider(new BlackboxContextMenu(api));
 
@@ -75,8 +75,8 @@ public class ProtomeExtension implements BurpExtension {
         tabs.add("Mutations", buildMutationsTab());
 
         mainPanel.add(tabs);
-        api.userInterface().registerSuiteTab("Protome", mainPanel);
-        api.logging().logToOutput("Protome loaded.");
+        api.userInterface().registerSuiteTab("ProtoME", mainPanel);
+        api.logging().logToOutput("ProtoME loaded.");
     }
 
     /**
@@ -90,7 +90,7 @@ public class ProtomeExtension implements BurpExtension {
      * Right-clicking a message node in the tree opens a context menu with two
      * payload generation helpers: one that copies just the JSON body, and one
      * that copies a complete ready-to-paste Burp HTTP request with all the
-     * required Protome headers pre-filled.
+     * required ProtoME headers pre-filled.
      */
     private JPanel buildSettingsTab() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
@@ -156,7 +156,7 @@ public class ProtomeExtension implements BurpExtension {
         });
 
         // "Copy as Full Burp Request" — wraps the JSON body in a complete HTTP request
-        // string with all the Protome headers pre-filled. Paste directly into Repeater.
+        // string with all the ProtoME headers pre-filled. Paste directly into Repeater.
         copyFullRequestItem.addActionListener(e -> {
             Descriptors.Descriptor desc = getSelectedDescriptor();
             if (desc == null) return;
