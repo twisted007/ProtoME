@@ -25,3 +25,7 @@ CLAUDE.md
 # OS-generated files
 .DS_Store
 Thumbs.db
+
+# Release Notes
+release_notes/
+.dev-instruct.md

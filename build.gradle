@@ -5,7 +5,14 @@ plugins {
 }
 
 group = 'com.protome'
-version = '2.0.0'
+
+def gitVersion = {
+    def proc = 'git describe --tags --always'.execute()
+    proc.waitFor()
+    proc.text.trim().replaceAll('^v', '')
+}
+
+version = gitVersion()
 
 repositories {
     mavenCentral()
