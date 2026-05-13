@@ -25,7 +25,7 @@ Two modes are available:
 1. Download the pre-compiled JAR, or build it yourself (see below).
 2. In Burp Suite, go to **Extensions** → **Add**.
 3. Set **Extension type** to **Java**.
-4. Select `ProtoME-1.0-SNAPSHOT-all.jar` (use the `-all` jar — it bundles all dependencies).
+4. Select `ProtoME-2.x.x-SNAPSHOT-all.jar` (use the `-all` jar — it bundles all dependencies).
 5. Click **Next**. A new **ProtoME** tab will appear in the main Burp interface.
 
 ### Building from source
@@ -34,7 +34,7 @@ Two modes are available:
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew shadowJar
 ```
 
-Output: `build/libs/ProtoME-1.0-SNAPSHOT-all.jar`
+Output: `build/libs/ProtoME-2.x.x-SNAPSHOT-all.jar`
 
 ---
 
