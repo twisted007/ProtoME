@@ -61,6 +61,11 @@ public class ProtoManager {
         return messageDescriptors;
     }
 
+    public void clearDescriptors() {
+        messageDescriptors.clear();
+        loadedProtoFile = null;
+    }
+
     /**
      * Loads a .proto file in two phases: compile it with protoc, then parse
      * the resulting binary descriptor set into our in-memory registry.

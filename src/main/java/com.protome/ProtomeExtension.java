@@ -2,6 +2,7 @@ package com.protome;
 
 import burp.api.montoya.BurpExtension;
 import burp.api.montoya.MontoyaApi;
+import burp.api.montoya.extension.ExtensionUnloadingHandler;
 import com.google.protobuf.Descriptors;
 
 import javax.swing.*;
@@ -76,6 +77,13 @@ public class ProtomeExtension implements BurpExtension {
 
         mainPanel.add(tabs);
         api.userInterface().registerSuiteTab("ProtoME", mainPanel);
+
+        api.extension().registerUnloadingHandler(() -> {
+            logger.shutdown();
+            protoManager.clearDescriptors();
+            api.logging().logToOutput("ProtoME unloaded.");
+        });
+
         api.logging().logToOutput("ProtoME loaded.");
     }
 
